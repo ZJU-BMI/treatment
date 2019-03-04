@@ -15,7 +15,9 @@ def evaluate(model, test_set):
 
 def average_metric(metrics):
     m = []
+    s = []
     for metric in zip(*metrics):
         m.append(np.mean(metric))
+        s.append(np.std(metric))
 
-    return tuple(m)
+    return m, s

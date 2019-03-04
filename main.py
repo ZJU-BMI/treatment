@@ -8,7 +8,7 @@ def parse_arg():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--random_state', type=int, default=1000)
-    parser.add_argument('--model', type=str, default='rf',
+    parser.add_argument('--model', type=str, default='proposed',
                         choices=['lr', 'svm', 'rf', 'mlp', 'proposed'])
 
     args = parser.parse_args()

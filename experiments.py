@@ -11,7 +11,11 @@ def do_experiment(data_set=None, random_state=1000):
 
     fold = StratifiedKFold(n_splits=5, random_state=random_state)
     scaler = MyScaler()
+
     config = ModelConfig()
+    config.x_dim = data_set.x_dim
+    config.a_dim = data_set.a_dim
+
     model = BaseModel(config)
     metrics = []
 

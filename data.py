@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-import tensorflow as tf
 
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import StandardScaler
@@ -14,20 +13,27 @@ class HF(object):
 
     @classmethod
     def load(cls,
-             file_path="./resources/心衰_一年再入院.csv",
-             label_column='一年内心源性再住院',
-             treatment_column='药物分类治疗',
-             a_nums=3):
+             file_path,
+             label_column,
+             feature_columns,
+             treatment_columns):
         df = pd.read_csv(file_path, engine='python', encoding='gbk')
-        x = df.iloc[:, 1:92].values
+        x = df.iloc[:, feature_columns].values
         y = np.reshape(df[label_column].values, (-1, 1))
-        a = df[treatment_column].values
-        a = tf.keras.utils.to_categorical(a, a_nums)
+        a = df.iloc[:, treatment_columns].values
         return cls(x, a, y)
 
     @property
     def examples(self):
         return self.x.shape[0]
+
+    @property
+    def x_dim(self):
+        return self.x.shape[1]
+
+    @property
+    def a_dim(self):
+        return self.a.shape[1]
 
     def subset(self, index):
         return HF(self.x[index], self.a[index], self.y[index])
@@ -54,5 +60,11 @@ class MyScaler(object):
 
 eight_hf = HF.load('./resources/心衰_一年再入院_8类.csv',
                    label_column='1年内心源性再住院',
-                   treatment_column='treatment_class',
-                   a_nums=8)
+                   feature_columns=[i for i in range(1, 92, 1)],
+                   treatment_columns=[i for i in range(92, 106, 1)])
+
+
+acs = HF.load('./resources/data_processed.csv',
+              label_column='缺血752',
+              feature_columns=[i for i in range(12, 320, 1)],
+              treatment_columns=[i for i in range(320, 338, 1)])

@@ -10,15 +10,20 @@ class ModelConfig(object):
         self.a_dim = 8
         self.y_dim = 1
 
-        self.xh_dim = 50
-        self.ah_dim = 4
-
         self.alpha = 1
         self.beta = 1
         self.gamma = 1
 
         self.batch_size = 128
         self.epochs = 1000
+
+    @property
+    def xh_dim(self):
+        return self.x_dim // 2
+
+    @property
+    def ah_dim(self):
+        return self.a_dim // 2
 
     @property
     def buffer_size(self):
@@ -77,18 +82,26 @@ class BaseModel(object):
     def _main_graph(self):
         def x_ae():
             wx = tf.get_variable('wx', [self._config.x_dim, self._config.xh_dim],
-                                 initializer=tf.contrib.layers.xavier_initializer())
-            xh = self._x @ wx
-            x_rec = xh @ tf.transpose(wx)
+                                 initializer=tf.keras.initializers.glorot_uniform())
+            bx = tf.get_variable('bx', [self._config.xh_dim],
+                                 initializer=tf.keras.initializers.zeros())
+            zx = tf.get_variable('zx', [self._config.x_dim],
+                                 initializer=tf.keras.initializers.zeros())
+            xh = self._x @ wx + bx
+            x_rec = xh @ tf.transpose(wx) + zx
             return xh, x_rec
 
         self._xh, self._x_rec = x_ae()
 
         def a_ae():
             wa = tf.get_variable('wa', [self._config.a_dim, self._config.ah_dim],
-                                 initializer=tf.contrib.layers.xavier_initializer())
-            ah = self._a @ wa
-            a_rec = ah @ tf.transpose(wa)
+                                 initializer=tf.keras.initializers.glorot_uniform())
+            ba = tf.get_variable('ba', [self._config.ah_dim],
+                                 initializer=tf.keras.initializers.zeros())
+            za = tf.get_variable('za', [self._config.a_dim],
+                                 initializer=tf.keras.initializers.zeros())
+            ah = self._a @ wa + ba
+            a_rec = ah @ tf.transpose(wa) + za
             return ah, a_rec
 
         self._ah, self._a_rec = a_ae()
@@ -119,10 +132,14 @@ class BaseModel(object):
         self._pred = tf.nn.sigmoid(self._logits)
 
     def _loss_def(self):
-        self._x_rec_loss = tf.losses.sigmoid_cross_entropy(multi_class_labels=self._x,
-                                                           logits=self._x_rec)
-        self._a_rec_loss = tf.losses.sigmoid_cross_entropy(multi_class_labels=self._a,
+        # self._x_rec_loss = tf.losses.sigmoid_cross_entropy(multi_class_labels=self._x,
+        #                                                    logits=self._x_rec)
+        self._a_rec_loss = tf.losses.sigmoid_cross_entropy(multi_class_labels=self._a,  # a(treatment) 确保是0或1的
                                                            logits=self._a_rec)
+        self._x_rec_loss = tf.losses.mean_squared_error(labels=self._x,  # x(feature) 是实数
+                                                        predictions=self._x_rec)
+        # self._a_rec_loss = tf.losses.mean_squared_error(labels=self._a,
+        #                                                 predictions=self._a_rec)
         self._pred_loss = tf.losses.sigmoid_cross_entropy(multi_class_labels=self._y,
                                                           logits=self._logits)
         self._gen_loss = tf.losses.sigmoid_cross_entropy(multi_class_labels=tf.ones_like(self._a_fake_logits),
