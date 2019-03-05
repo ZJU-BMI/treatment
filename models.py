@@ -13,8 +13,9 @@ class ModelConfig(object):
         self.alpha = 1
         self.beta = 1
         self.gamma = 1
+        self.l2 = 0.001
 
-        self.batch_size = 128
+        self.batch_size = 256
         self.epochs = 1000
 
     @property
@@ -80,9 +81,12 @@ class BaseModel(object):
             self._x, self._a, self._y = self._iter.get_next()
 
     def _main_graph(self):
+        self._regularizer = tf.keras.regularizers.l2(self._config.l2)
+
         def x_ae():
             wx = tf.get_variable('wx', [self._config.x_dim, self._config.xh_dim],
                                  initializer=tf.keras.initializers.glorot_uniform())
+            tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self._regularizer(wx))
             bx = tf.get_variable('bx', [self._config.xh_dim],
                                  initializer=tf.keras.initializers.zeros())
             zx = tf.get_variable('zx', [self._config.x_dim],
@@ -96,6 +100,7 @@ class BaseModel(object):
         def a_ae():
             wa = tf.get_variable('wa', [self._config.a_dim, self._config.ah_dim],
                                  initializer=tf.keras.initializers.glorot_uniform())
+            tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, self._regularizer(wa))
             ba = tf.get_variable('ba', [self._config.ah_dim],
                                  initializer=tf.keras.initializers.zeros())
             za = tf.get_variable('za', [self._config.a_dim],
@@ -108,15 +113,18 @@ class BaseModel(object):
 
         def _a_generator():
             i = tf.keras.layers.Input(shape=(self._config.xh_dim + self._config.y_dim,))
-            x = tf.keras.layers.Dense(10, activation=tf.nn.relu)(i)
-            o = tf.keras.layers.Dense(self._config.a_dim, activation=tf.nn.sigmoid)(x)
+            x = tf.layers.Dense(10, activation=tf.nn.relu,
+                                kernel_regularizer=self._regularizer)(i)
+            o = tf.layers.Dense(self._config.a_dim, activation=tf.nn.sigmoid,
+                                kernel_regularizer=self._regularizer)(x)
             g = tf.keras.models.Model(inputs=i, outputs=o)
             return g
 
         def _a_discriminator():
             i = tf.keras.layers.Input(shape=(self._config.a_dim,))
-            x = tf.keras.layers.Dense(self._config.a_dim // 2, activation=tf.nn.relu)(i)
-            o = tf.keras.layers.Dense(1)(x)
+            x = tf.layers.Dense(self._config.ah_dim, activation=tf.nn.relu,
+                                kernel_regularizer=self._regularizer)(i)
+            o = tf.layers.Dense(1)(x)
             d = tf.keras.models.Model(inputs=i, outputs=o)
             return d
 
@@ -128,7 +136,8 @@ class BaseModel(object):
         self._a_real_logits = self._ad(self._a)
 
     def _pred_def(self):
-        self._logits = tf.layers.dense(tf.concat((self._xh, self._ah), -1), self._config.y_dim)
+        self._logits = tf.layers.dense(tf.concat((self._xh, self._ah), -1), self._config.y_dim,
+                                       kernel_regularizer=tf.keras.regularizers.l2())
         self._pred = tf.nn.sigmoid(self._logits)
 
     def _loss_def(self):
@@ -149,10 +158,13 @@ class BaseModel(object):
             tf.losses.sigmoid_cross_entropy(multi_class_labels=tf.zeros_like(self._a_fake_logits),
                                             logits=self._a_fake_logits)
 
+        self._reg_loss = tf.losses.get_regularization_loss()
+
         self._total_loss = self._gen_loss \
             + self._config.alpha * self._x_rec_loss \
             + self._config.beta * self._a_rec_loss \
-            + self._config.gamma * self._pred_loss
+            + self._config.gamma * self._pred_loss \
+            + self._reg_loss  # 定义regularizer的时候已经定义好L2超参数了，这里不再乘l2
 
     def _train_def(self):
         gen_vars = [w for w in tf.trainable_variables() if w not in self._ad.trainable_variables]
