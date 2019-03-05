@@ -36,7 +36,7 @@ class DataSet(object):
         return self.a.shape[1]
 
     def subset(self, index):
-        return HF(self.x[index], self.a[index], self.y[index])
+        return DataSet(self.x[index], self.a[index], self.y[index])
 
 
 class MyScaler(object):

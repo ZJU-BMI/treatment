@@ -160,8 +160,7 @@ class BaseModel(object):
 
         self._reg_loss = tf.losses.get_regularization_loss()
 
-        self._total_loss = self._gen_loss \
-            + self._config.alpha * self._x_rec_loss \
+        self._total_loss = self._config.alpha * self._x_rec_loss \
             + self._config.beta * self._a_rec_loss \
             + self._config.gamma * self._pred_loss \
             + self._reg_loss  # 定义regularizer的时候已经定义好L2超参数了，这里不再乘l2

@@ -6,8 +6,8 @@ from sklearn.ensemble import RandomForestClassifier
 
 import numpy as np
 
-from data import eight_hf, MyScaler
-from metrics import average_metric
+from data import hf, MyScaler
+from metrics import give_metric, average_metric
 
 
 def evaluate(model, test_set):
@@ -28,13 +28,13 @@ def evaluate(model, test_set):
 
 def experiment(model_class, data_set=None, random_state=1000):
     if data_set is None:
-        data_set = eight_hf
+        data_set = hf()
     data_set.y = np.reshape(data_set.y, (-1))
 
     fold = StratifiedKFold(n_splits=5, random_state=random_state)
     scaler = MyScaler()
-    metrics = []
 
+    y_true, y_pred, y_score = [], [], []
     for train_index, test_index in fold.split(data_set.x, data_set.y):
         train_set, test_set = data_set.subset(train_index), data_set.subset(test_index)
 
@@ -42,12 +42,19 @@ def experiment(model_class, data_set=None, random_state=1000):
         test_set.x = scaler.transform(test_set.x)
 
         model = model_class()
-
         model.fit(np.concatenate((train_set.x, train_set.a), -1), train_set.y)
-        metric = evaluate(model, test_set)
-        metrics.append(metric)
 
-    print(average_metric(metrics))
+        y_true.append(test_set.y)
+        y_pred.append(model.predict(np.concatenate((test_set.x, test_set.a), -1)))
+        if hasattr(model, 'predict_proba'):
+            score = model.predict_proba(np.concatenate((test_set.x, test_set.a), -1))
+            score = score[:, 1]
+            y_score.append(score)
+
+    if len(y_score) > 0:
+        print(give_metric(y_true, y_pred, y_score))
+    else:
+        print(give_metric(y_true, y_pred, None))
 
 
 def lr(data_set=None, random_state=1000):

@@ -2,7 +2,7 @@ from sklearn.model_selection import StratifiedKFold
 
 from data import MyScaler, hf, acs
 from models import BaseModel, ModelConfig
-from metrics import evaluate, average_metric
+from metrics import give_metric
 
 
 def do_experiment(data_set=None, random_state=1000):
@@ -17,8 +17,8 @@ def do_experiment(data_set=None, random_state=1000):
     config.a_dim = data_set.a_dim
 
     model = BaseModel(config)
-    metrics = []
 
+    y_true, y_pred, y_score = [], [], []
     for train_index, test_index in fold.split(data_set.x, data_set.y):
         train_set, test_set = data_set.subset(train_index), data_set.subset(test_index)
 
@@ -26,7 +26,9 @@ def do_experiment(data_set=None, random_state=1000):
         test_set.x = scaler.transform(test_set.x)
 
         model.fit(train_set)
-        metric = evaluate(model, test_set)
-        metrics.append(metric)
+        y_true.append(test_set.y)
+        score = model.predict(test_set)
+        y_score.append(score)
+        y_pred.append(score > 0.5)
 
-    print(average_metric(metrics))
+    print(give_metric(y_true, y_pred, y_score, 'Proposed'))
