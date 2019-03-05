@@ -7,7 +7,7 @@ from sklearn.ensemble import RandomForestClassifier
 import numpy as np
 
 from data import hf, MyScaler
-from metrics import give_metric, average_metric
+from metrics import give_metric
 
 
 def evaluate(model, test_set):
@@ -26,7 +26,7 @@ def evaluate(model, test_set):
     return acc, auc_score, precision, recall, f1
 
 
-def experiment(model_class, data_set=None, random_state=1000):
+def experiment(model_class, data_set=None, model_name=None, random_state=1000):
     if data_set is None:
         data_set = hf()
     data_set.y = np.reshape(data_set.y, (-1))
@@ -52,24 +52,24 @@ def experiment(model_class, data_set=None, random_state=1000):
             y_score.append(score)
 
     if len(y_score) > 0:
-        print(give_metric(y_true, y_pred, y_score))
+        print(give_metric(y_true, y_pred, y_score, model_name))
     else:
-        print(give_metric(y_true, y_pred, None))
+        print(give_metric(y_true, y_pred, None, model_name))
 
 
 def lr(data_set=None, random_state=1000):
     def LRWrapper():
         return LogisticRegression(solver='lbfgs')
-    experiment(LRWrapper, data_set, random_state)
+    experiment(LRWrapper, data_set, "Logistic Regression", random_state)
 
 
 def svm(data_set=None, random_state=1000):
     def SVCWrapper():
         return SVC(gamma='scale')
-    experiment(SVCWrapper, data_set, random_state)
+    experiment(SVCWrapper, data_set, 'SVM', random_state)
 
 
 def rf(data_set=None, random_state=1000):
     def RandomForestWrapper():
         return RandomForestClassifier(n_estimators=100)
-    experiment(RandomForestWrapper, data_set, random_state)
+    experiment(RandomForestWrapper, data_set, 'Random Forest', random_state)
