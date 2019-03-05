@@ -3,6 +3,8 @@ import argparse
 import experiments
 import benchmark
 
+from data import hf, acs
+
 
 def parse_arg():
     parser = argparse.ArgumentParser()
@@ -10,6 +12,8 @@ def parse_arg():
     parser.add_argument('--random_state', type=int, default=1000)
     parser.add_argument('--model', type=str, default='proposed',
                         choices=['lr', 'svm', 'rf', 'mlp', 'proposed'])
+    parser.add_argument('--dataset', type=str, default='hf',
+                        choices=['hf', 'acs'])
 
     args = parser.parse_args()
     return args
@@ -17,14 +21,19 @@ def parse_arg():
 
 def main():
     args = parse_arg()
+
+    if args.dataset == 'acs':
+        data_set = acs()
+    else:
+        data_set = hf()
     if args.model == 'proposed':
-        experiments.do_experiment(None, args.random_state)
+        experiments.do_experiment(data_set, args.random_state)
     elif args.model == 'lr':
-        benchmark.lr(None, args.random_state)
+        benchmark.lr(data_set, args.random_state)
     elif args.model == 'svm':
-        benchmark.svm(None, args.random_state)
+        benchmark.svm(data_set, args.random_state)
     elif args.model == 'rf':
-        benchmark.rf(None, args.random_state)
+        benchmark.rf(data_set, args.random_state)
     elif args.model == 'mlp':
         pass
     else:

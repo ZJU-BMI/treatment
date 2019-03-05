@@ -1,13 +1,13 @@
 from sklearn.model_selection import StratifiedKFold
 
-from data import MyScaler, eight_hf
+from data import MyScaler, hf, acs
 from models import BaseModel, ModelConfig
 from metrics import evaluate, average_metric
 
 
 def do_experiment(data_set=None, random_state=1000):
     if data_set is None:
-        data_set = eight_hf
+        data_set = hf()
 
     fold = StratifiedKFold(n_splits=5, random_state=random_state)
     scaler = MyScaler()

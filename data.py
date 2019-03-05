@@ -5,7 +5,7 @@ from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import StandardScaler
 
 
-class HF(object):
+class DataSet(object):
     def __init__(self, x, a, y):
         self.x = x
         self.a = a
@@ -58,13 +58,15 @@ class MyScaler(object):
         return result
 
 
-eight_hf = HF.load('./resources/心衰_一年再入院_8类.csv',
-                   label_column='1年内心源性再住院',
-                   feature_columns=[i for i in range(1, 92, 1)],
-                   treatment_columns=[i for i in range(92, 106, 1)])
+def hf():
+    return DataSet.load('./resources/心衰_一年再入院_8类.csv',
+                        label_column='1年内心源性再住院',
+                        feature_columns=[i for i in range(1, 92, 1)],
+                        treatment_columns=[i for i in range(92, 106, 1)])
 
 
-acs = HF.load('./resources/data_processed.csv',
-              label_column='缺血752',
-              feature_columns=[i for i in range(12, 320, 1)],
-              treatment_columns=[i for i in range(320, 338, 1)])
+def acs():
+    return DataSet.load('./resources/data_processed.csv',
+                        label_column='缺血752',
+                        feature_columns=[i for i in range(12, 320, 1)],
+                        treatment_columns=[i for i in range(320, 338, 1)])
