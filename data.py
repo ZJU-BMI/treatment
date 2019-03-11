@@ -39,6 +39,16 @@ class DataSet(object):
         return DataSet(self.x[index], self.a[index], self.y[index])
 
 
+def pair_examples(data_set: DataSet, batch_size=256):
+    """
+
+    :param data_set: DataSet : hf Or acs
+    :return: (x1, x2), y1
+    """
+
+    pass
+
+
 class MyScaler(object):
     def __init__(self):
         self.imputer = SimpleImputer(strategy='constant', fill_value=0)

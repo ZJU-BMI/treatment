@@ -57,12 +57,14 @@ def plot_average_roc(fpr, tpr, model_name):
     mean_tpr /= len(fpr)
 
     for i in range(len(fpr)):
+        label = 'auc of cv {}: area = {:.3f}'.format(i, auc(fpr[i], tpr[i]))
         plt.plot(fpr[i], tpr[i], linestyle='-',
-                 label='auc of cv {}: area = {}'.format(i, auc(fpr[i], tpr[i])))
+                 label=label)
 
     area = auc(all_fpr, mean_tpr)
+    label = 'average auc = {:.3f}'.format(area)
     plt.plot(all_fpr, mean_tpr,
-             label='average_roc area = {}'.format(area),
+             label=label,
              color='deeppink',
              linestyle=':')
 
@@ -70,6 +72,6 @@ def plot_average_roc(fpr, tpr, model_name):
     plt.ylim([0.0, 1.05])
     plt.xlabel('False positive rate')
     plt.ylabel('True positive rate')
-    plt.title('roc cur for model : {}'.format(model_name))
+    plt.title('roc curve for model : {}'.format(model_name))
     plt.legend(loc='lower right')
     plt.show()

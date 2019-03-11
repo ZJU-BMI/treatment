@@ -1,7 +1,7 @@
 from sklearn.model_selection import StratifiedKFold
 
 from data import MyScaler, hf, acs
-from models import BaseModel, ModelConfig
+from models import GanDaeMLPModel, GDMModelConfig
 from metrics import give_metric
 
 
@@ -12,11 +12,11 @@ def do_experiment(data_set=None, random_state=1000):
     fold = StratifiedKFold(n_splits=5, random_state=random_state)
     scaler = MyScaler()
 
-    config = ModelConfig()
+    config = GDMModelConfig()
     config.x_dim = data_set.x_dim
     config.a_dim = data_set.a_dim
 
-    model = BaseModel(config)
+    model = GanDaeMLPModel(config)
 
     y_true, y_pred, y_score = [], [], []
     for train_index, test_index in fold.split(data_set.x, data_set.y):

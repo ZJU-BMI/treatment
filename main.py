@@ -10,7 +10,7 @@ def parse_arg():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--random_state', type=int, default=1000)
-    parser.add_argument('--model', type=str, default='rf',
+    parser.add_argument('--model', type=str, default='proposed',
                         choices=['lr', 'svm', 'rf', 'mlp', 'proposed'])
     parser.add_argument('--dataset', type=str, default='acs',
                         choices=['hf', 'acs'])

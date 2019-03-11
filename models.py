@@ -4,31 +4,7 @@ import json
 import tensorflow as tf
 
 
-class ModelConfig(object):
-    def __init__(self):
-        self.x_dim = 91
-        self.a_dim = 8
-        self.y_dim = 1
-
-        self.alpha = 1
-        self.beta = 1
-        self.gamma = 1
-        self.l2 = 0.001
-
-        self.batch_size = 256
-        self.epochs = 1000
-
-    @property
-    def xh_dim(self):
-        return self.x_dim // 2
-
-    @property
-    def ah_dim(self):
-        return self.a_dim // 2
-
-    @property
-    def buffer_size(self):
-        return self.batch_size * 10
+class Config(object):
 
     @classmethod
     def from_dict(cls, json_object):
@@ -51,9 +27,36 @@ class ModelConfig(object):
         return json.dumps(self.to_dict(), indent=2, sort_keys=True) + '\n'
 
 
-class BaseModel(object):
+class GDMModelConfig(Config):
+    def __init__(self):
+        self.x_dim = 91
+        self.a_dim = 8
+        self.y_dim = 1
+
+        self.alpha = 0.1
+        self.beta = 0.1
+        self.gamma = 1
+        self.l2 = 0.01
+
+        self.batch_size = 256
+        self.epochs = 1000
+
+    @property
+    def xh_dim(self):
+        return self.x_dim // 2
+
+    @property
+    def ah_dim(self):
+        return self.a_dim // 2
+
+    @property
+    def buffer_size(self):
+        return self.batch_size * 10
+
+
+class GanDaeMLPModel(object):
     def __init__(self,
-                 config: ModelConfig):
+                 config: GDMModelConfig):
         self._config = config
         self._build()
 
@@ -155,15 +158,16 @@ class BaseModel(object):
                                                          logits=self._a_fake_logits)
         self._dis_loss = tf.losses.sigmoid_cross_entropy(multi_class_labels=tf.ones_like(self._a_real_logits),
                                                          logits=self._a_real_logits) + \
-            tf.losses.sigmoid_cross_entropy(multi_class_labels=tf.zeros_like(self._a_fake_logits),
-                                            logits=self._a_fake_logits)
+                         tf.losses.sigmoid_cross_entropy(multi_class_labels=tf.zeros_like(self._a_fake_logits),
+                                                         logits=self._a_fake_logits)
 
         self._reg_loss = tf.losses.get_regularization_loss()
 
         self._total_loss = self._config.alpha * self._x_rec_loss \
-            + self._config.beta * self._a_rec_loss \
-            + self._config.gamma * self._pred_loss \
-            + self._reg_loss  # 定义regularizer的时候已经定义好L2超参数了，这里不再乘l2
+                           + self._config.beta * self._a_rec_loss \
+                           + self._config.gamma * self._pred_loss \
+                           + self._gen_loss \
+                           + self._reg_loss  # 定义regularizer的时候已经定义好L2超参数了，这里不再乘l2
 
     def _train_def(self):
         gen_vars = [w for w in tf.trainable_variables() if w not in self._ad.trainable_variables]
@@ -193,3 +197,95 @@ class BaseModel(object):
     def predict(self, data_set):
         return self._sess.run(self._pred, feed_dict={self._x: data_set.x,
                                                      self._a: data_set.a})
+
+
+class FewShotConfig(Config):
+    def __init__(self):
+        self.x_dim = 100
+        self.rep_layers = 2
+
+        self.l2 = 0.001
+        self.k = 1
+
+        self.batch_size = 256
+        self.learning_rate = 0.001
+        self.epochs = 1000
+
+    @property
+    def buffer_size(self):
+        return self.batch_size * 10
+
+    @property
+    def rep_dim(self):
+        return self.x_dim // 2
+
+
+class FewShotModel(object):
+    def __init__(self, config: FewShotConfig):
+        self._config = config
+        self._build()
+
+    def _build(self):
+        self._placeholder_def()
+        self._main_graph()
+
+    def _placeholder_def(self):
+        self._x1 = tf.placeholder(tf.float32, [None, self._config.x_dim], 'x1')
+        self._x2 = tf.placeholder(tf.float32, [None, self._config.x_dim], 'x2')
+        self._y = tf.placeholder(tf.float32, [None, 1], 'y')
+
+    def _main_graph(self):
+        self._regularizer = tf.keras.regularizers.l2(self._config.l2)
+
+        def rep_net():
+            inp = tf.keras.layers.Input((self._config.x_dim, ))
+            x = inp
+            for _ in range(self._config.rep_layers):
+                x = tf.keras.layers.Dense(self._config.rep_dim, activation=tf.nn.sigmoid,
+                                          kernel_regularizer=self._regularizer)
+            model = tf.keras.models.Model(inputs=inp, outputs=x)
+            return model
+
+        self._rep_net = rep_net()
+        self._rep1 = tf.math.l2_normalize(self._rep_net(self._x1), -1)
+        self._rep2 = tf.math.l2_normalize(self._rep_net(self._x2), -1)
+
+        self._distance = tf.sqrt(tf.reduce_sum(tf.square(self._rep1 - self._rep2), 1))
+
+    def _pred_def(self):
+        pass
+
+    def _loss_def(self):
+        self._total_loss = contrastive_loss(self._y, self._rep1, self._rep2)
+
+    def _train_def(self):
+        self._train_op = tf.train.AdamOptimizer(self._config.learning_rate).minimize(self._total_loss)
+
+    def _init_sess(self):
+        c = tf.ConfigProto()
+        c.gpu_options.allow_growth = True
+        self._sess = tf.Session(config=c)
+        self._init = tf.global_variables_initializer()
+        self._sess.run(self._init)
+
+    def fit(self, data_set):
+        pass
+
+    def predict(self, data_set):
+        pass
+
+
+def contrastive_loss(labels, pos_embedding, neg_embedding, margin=1.0):
+    """
+
+    :param labels: two examples are from the same class ? 1 : 0
+    :param pos_embedding: 2-D vector embedding of first input
+    :param neg_embedding: 2-D vector embedding of second input
+    :param margin:
+    :return:
+    """
+    distances = tf.sqrt(tf.reduce_sum(tf.square(pos_embedding - neg_embedding), 1))
+    return tf.reduce_mean(
+              tf.to_float(labels) * tf.square(distances) +
+              (1 - tf.to_float(labels) * tf.square(tf.maximum(margin - distances, 0)))
+           )
