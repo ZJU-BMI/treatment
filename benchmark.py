@@ -31,7 +31,7 @@ def experiment(model_class, data_set=None, model_name=None, random_state=1000):
         data_set = hf()
     data_set.y = np.reshape(data_set.y, (-1))
 
-    fold = StratifiedKFold(n_splits=5, random_state=random_state)
+    fold = StratifiedKFold(n_splits=5, shuffle=True, random_state=random_state)
     scaler = MyScaler()
 
     y_true, y_pred, y_score = [], [], []
@@ -57,15 +57,15 @@ def experiment(model_class, data_set=None, model_name=None, random_state=1000):
         print(give_metric(y_true, y_pred, None, model_name))
 
 
-def lr(data_set=None, random_state=1000):
+def lr(data_set=None, random_state=1000, C=1):
     def LRWrapper():
-        return LogisticRegression(solver='lbfgs')
+        return LogisticRegression(solver='lbfgs', C=C)
     experiment(LRWrapper, data_set, "Logistic Regression", random_state)
 
 
-def svm(data_set=None, random_state=1000):
+def svm(data_set=None, random_state=1000, C=1, kernel='rbf'):
     def SVCWrapper():
-        return SVC(gamma='scale')
+        return SVC(gamma='scale', C=C, kernel=kernel)
     experiment(SVCWrapper, data_set, 'SVM', random_state)
 
 

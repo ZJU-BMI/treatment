@@ -39,14 +39,25 @@ class DataSet(object):
         return DataSet(self.x[index], self.a[index], self.y[index])
 
 
-def pair_examples(data_set: DataSet, batch_size=256):
+def pair_examples(data_set: DataSet, batch_size=256, epochs=1):
     """
 
     :param data_set: DataSet : hf Or acs
+    :param batch_size: int : number of pairs
+    :param epochs:
     :return: (x1, x2), y1
     """
+    num_batches = data_set.examples * data_set.examples * epochs // batch_size
 
-    pass
+    for _ in range(num_batches):
+        sample1 = np.random.random_integers(0, data_set.examples-1, batch_size)
+        sample2 = np.random.random_integers(0, data_set.examples-1, batch_size)
+
+        x1 = np.concatenate((data_set.x[sample1], data_set.a[sample1]), -1)
+        x2 = np.concatenate((data_set.x[sample2], data_set.a[sample2]), -1)
+        y = np.equal(data_set.y[sample1], data_set.y[sample2]) + 0
+
+        yield (x1, x2), y
 
 
 class MyScaler(object):
