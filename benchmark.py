@@ -65,7 +65,7 @@ def lr(data_set=None, random_state=1000, C=1):
 
 def svm(data_set=None, random_state=1000, C=1, kernel='rbf'):
     def SVCWrapper():
-        return SVC(gamma='scale', C=C, kernel=kernel)
+        return SVC(gamma='scale', C=C, kernel=kernel, probability=True)
     experiment(SVCWrapper, data_set, 'SVM', random_state)
 
 

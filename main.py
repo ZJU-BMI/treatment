@@ -13,11 +13,11 @@ def parse_arg():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--random_state', type=int, default=500)
-    parser.add_argument('--model', type=str, default='proposed',
+    parser.add_argument('--model', type=str, default='svm',
                         choices=['lr', 'svm', 'rf', 'mlp', 'proposed', 'few_shot'])
     parser.add_argument('--dataset', type=str, default='hf',
                         choices=['hf', 'acs'])
-    parser.add_argument('--regular', type=float, default='0.0001')
+    parser.add_argument('--regular', type=float, default='0.1')
     parser.add_argument('--kernel', type=str, default='poly',
                         choices=['rbf', 'linear', 'poly'])
 
