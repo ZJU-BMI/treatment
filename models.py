@@ -36,15 +36,15 @@ class GDMModelConfig(Config):
         self.a_dim = 8
         self.y_dim = 1
 
-        self.alpha = 0.1
-        self.beta = 0
+        self.alpha = 1
+        self.beta = 10
         self.l2 = 0.01
 
         self.act_fn = 'sigmoid'
 
         self.learning_rate = 0.001
         self.batch_size = 256
-        self.epochs = 100
+        self.epochs = 1000
 
     @property
     def xh_dim(self):

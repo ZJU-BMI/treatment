@@ -10,13 +10,11 @@ from data import MyScaler, hf
 from models import GanDaeMLPModel, GDMModelConfig, FewShotConfig, FewShotModel
 from metrics import give_metric
 
-
 warnings.filterwarnings('ignore', category=ConvergenceWarning)
 warnings.filterwarnings('ignore', category=UndefinedMetricWarning)
 
 
-def do_experiment(model, data_set, random_state=1000, rf=None):
-
+def do_experiment(model, data_set, random_state=None, rf=None):
     fold = StratifiedKFold(n_splits=5, shuffle=True, random_state=random_state)
     scaler = MyScaler()
 
@@ -37,9 +35,9 @@ def do_experiment(model, data_set, random_state=1000, rf=None):
             y_pred.append(model.predict(test_set))
 
     if len(y_score) > 0:
-        metric = give_metric(y_true, y_pred, y_score, 'Proposed')
+        metric = give_metric(y_true, y_pred, y_score, 'Proposed', rf)
     else:
-        metric = give_metric(y_true, y_pred, None, 'Few shot')
+        metric = give_metric(y_true, y_pred, None, 'Few shot', rf)
 
     print(metric)
     if rf is not None:
@@ -47,7 +45,7 @@ def do_experiment(model, data_set, random_state=1000, rf=None):
             wf.write(str(metric) + '\n')
 
 
-def gdm_model_experiment(data_set=None, random_state=1000):
+def gdm_model_experiment(data_set=None, random_state=None):
     if data_set is None:
         data_set = hf()
 
@@ -60,11 +58,11 @@ def gdm_model_experiment(data_set=None, random_state=1000):
 
 
 def search_param(data_set):
-    alphas = [1, 0.1, 0.01, 0.001]
+    alphas = [0.01]
     # betas = [10, 1, 0.1, 0.01, 0.001]
     betas = [0]
-    l2s = [100, 10, 1, 0.1, 0.01, 0.001, 0.0001]
-    act_fns = ['relu', 'sigmoid']
+    l2s = [0.001]
+    act_fns = ['sigmoid']
 
     x_dim = data_set.x_dim
     a_dim = data_set.a_dim
@@ -90,7 +88,7 @@ def search_param(data_set):
                         wf.write(config.to_json_string())
 
                     for _ in range(5):
-                        do_experiment(model, data_set, None, "result/gdm/result")
+                        do_experiment(model, data_set, None, result_file)
 
 
 def few_shot_experiment(data_set=None, random_state=1000):
@@ -103,3 +101,32 @@ def few_shot_experiment(data_set=None, random_state=1000):
 
     model = FewShotModel(config)
     do_experiment(model, data_set, random_state)
+
+
+def treatment_experiments(data_set=None, random_state=1000):
+    if data_set is None:
+        data_set = hf()
+
+    config = GDMModelConfig()
+    config.act_fn = 'sigmoid'
+    config.alpha = 10
+    config.beta = 10
+    config.l2 = 0.1
+    config.epochs = 200
+
+    config.x_dim = data_set.x_dim
+
+    # treatment effect
+    config.a_dim = data_set.a_dim - 1
+    model = GanDaeMLPModel(config)
+
+    a_dim = data_set.a_dim
+    treat = data_set.a
+    for i in range(a_dim):
+        treat_columns = [a for a in range(a_dim) if a != i]
+        data_set.a = treat[:, treat_columns]
+
+        for _ in range(5):
+            do_experiment(model, data_set, random_state, "result/gdm/treat_result")
+
+

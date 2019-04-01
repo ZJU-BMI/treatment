@@ -5,8 +5,8 @@ from data import hf, acs
 
 
 if __name__ == "__main__":
-    data_sets = ['hf']
-    l2_coefficients = [0.0001, 0.001, 0.01, 0.1, 1, 10, 100]
+    data_sets = ['acs']
+    l2_coefficients = [100]
     kernels = ['rbf', 'poly']
 
     svm_cmd = "python main.py --model svm --dataset {} --regular {} --kernel {}"
@@ -30,4 +30,5 @@ if __name__ == "__main__":
             s = hf()
         else:
             s = acs()
-        experiments.search_param(s)
+        # experiments.search_param(s)
+        experiments.treatment_experiments(s)

@@ -15,7 +15,7 @@ def parse_arg():
     parser.add_argument('--random_state', type=int, default=500)
     parser.add_argument('--model', type=str, default='proposed',
                         choices=['lr', 'svm', 'rf', 'mlp', 'proposed', 'few_shot'])
-    parser.add_argument('--dataset', type=str, default='acs',
+    parser.add_argument('--dataset', type=str, default='hf',
                         choices=['hf', 'acs'])
     parser.add_argument('--regular', type=float, default='0.0001')
     parser.add_argument('--kernel', type=str, default='poly',

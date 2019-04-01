@@ -25,7 +25,7 @@ def average_metric(metrics):
     return m, s
 
 
-def give_metric(y_true, y_pred, y_score=None, model_name=None):
+def give_metric(y_true, y_pred, y_score=None, model_name=None, result_file=None):
     acc, auc_score, precision, recall, f1 = [], [], [], [], []
     for t, p in zip(y_true, y_pred):
         acc.append(accuracy_score(y_true=t, y_pred=p))
@@ -40,14 +40,14 @@ def give_metric(y_true, y_pred, y_score=None, model_name=None):
             auc_score.append(auc(fpr, tpr))
             fprs.append(fpr)
             tprs.append(tpr)
-        plot_average_roc(fprs, tprs, model_name)
+        plot_average_roc(fprs, tprs, model_name, "./result/gdm/result")
     else:
         auc_score = [-1 for _ in range(len(y_true))]
     metrics = [acc, auc_score, precision, recall, f1]
     return [np.average(i) for i in metrics], [np.std(i) for i in metrics]
 
 
-def plot_average_roc(fpr, tpr, model_name):
+def plot_average_roc(fpr, tpr, model_name, result_file=None):
     all_fpr = np.unique(np.concatenate(fpr))
 
     mean_tpr = np.zeros_like(all_fpr)
@@ -67,6 +67,14 @@ def plot_average_roc(fpr, tpr, model_name):
              label=label,
              color='deeppink',
              linestyle=':')
+
+    if result_file is not None:
+        with open(result_file, 'a') as af:
+            all_fpr_str = np.array2string(all_fpr, precision=4, separator=',').replace('\n', '').replace(" ", "") + '\n'
+            mean_tpr_str = np.array2string(mean_tpr, precision=4, separator=',').replace('\n', '').replace(" ", "") + '\n'
+            af.write(all_fpr_str)
+            af.write(mean_tpr_str)
+            af.write('\n')
 
     plt.xlim([0.0, 1.0])
     plt.ylim([0.0, 1.05])
